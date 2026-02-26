@@ -1,0 +1,28 @@
+---
+- name: "Install python virtualenv."
+  ansible.builtin.apt:
+    name:
+      - "python3-virtualenv"
+      - "python3-packaging"
+    update_cache: true
+
+- name: "Create certbot python venv."
+  ansible.builtin.pip:
+    name:
+      - "certbot"
+      - "wheel"
+      - "setuptools"
+    state: present
+    virtualenv: "{{ calopsys_certbot_venv_dir }}"
+    virtualenv_python: python3
+    virtualenv_site_packages: false
+
+- name: "Create certbot configuration directories."
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: 'directory'
+    owner: 'root'
+    group: 'root'
+    mode: '0750'
+  loop:
+    - "{{ calopsys_certbot_config_dir }}"

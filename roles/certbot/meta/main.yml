@@ -1,0 +1,15 @@
+---
+dependencies: []
+
+galaxy_info:
+  role_name: certbot
+  author: Calopsys
+  company: Calopsys
+  description: This role installs, manages and configures certbot on a Debian system.
+  license: MIT
+  min_ansible_version: 2.18.0
+  issue_tracker_url: https://github.com/calopsys/ansible-collection-security/issues
+  platforms:
+    - name: Debian
+      versions:
+        - all

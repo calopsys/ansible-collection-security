@@ -1,0 +1,13 @@
+---
+- name: "Import install.yml."
+  ansible.builtin.import_tasks: install.yml
+  tags: ['calopsys_certbot_install']
+
+- name: "Include certificate.yml."
+  ansible.builtin.include_tasks: certificate.yml
+  loop: "{{ calopsys_certbot_certificates }}"
+  tags: ['calopsys_certbot_certificate']
+
+- name: "Import services.yml"
+  ansible.builtin.import_tasks: services.yml
+  tags: ['calopsys_certbot_service']

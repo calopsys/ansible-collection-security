@@ -1,0 +1,24 @@
+---
+namespace: calopsys
+name: security
+readme: README.md
+authors:
+  - Calopsys <tech@calopsys.fr>
+license_file: 'LICENSE'
+repository: https://github.com/calopsys/ansible-collection-security
+issues: https://github.com/calopsys/ansible-collection-security/issues
+documentation: https://github.com/calopsys/ansible-collection-security
+homepage: https://www.calopsys.fr
+tags: ['linux']
+
+version: 1.0.0
+description: Installs, manages and configure a security instance on a Debian system.
+dependencies: {}
+build_ignore:
+  - .gitignore
+  - .ansible-lint
+  - .github
+  - build
+  - changelogs/fragments
+  - tests
+  - Makefile

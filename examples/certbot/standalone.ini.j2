@@ -1,0 +1,12 @@
+{{ ansible_managed | comment }}
+
+non-interactive = true
+agree-tos = true
+no-eff-email = true
+
+email = foo@bar.fr
+cert-name = {{ item.name }}
+domains = foo.fr,bar.fr
+standalone = true
+preferred-challenges = http
+deploy-hook = {{ calopsys_certbot_config_dir }}/{{ item.name }}/deploy-hook

@@ -1,0 +1,10 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=Timer for Certbot Renewal
+
+[Timer]
+OnBootSec=300
+OnUnitActiveSec={{ calopsys_certbot_renew_timer_interval }}
+
+[Install]
+WantedBy=multi-user.target

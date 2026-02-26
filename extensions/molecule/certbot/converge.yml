@@ -1,0 +1,16 @@
+---
+- name: Converge
+  hosts: instance
+  become: true
+  vars:
+    calopsys_certbot_certificates:
+      - name: "test_molecule"
+        config_template: "molecule_standalone.j2"
+        dns_pip_provider: "certbot-dns-cloudflare"
+        dns_auth_template: "molecule_dns_auth.j2"
+        hook_template: "molecule_hook.j2"
+        state: present
+  tasks:
+    - name: "Include certbot role"
+      ansible.builtin.import_role:
+        name: calopsys.security.certbot

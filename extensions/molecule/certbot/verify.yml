@@ -1,0 +1,154 @@
+---
+- name: Verify
+  hosts: instance
+  become: true
+  vars:
+    calopsys_certbot_config_dir: /etc/certbot
+    calopsys_certbot_venv_dir: "{{ calopsys_certbot_config_dir }}/venv"
+  tasks:
+    - name: "Verify certbot config directory exists."
+      ansible.builtin.stat:
+        path: "{{ calopsys_certbot_config_dir }}"
+      register: config_dir
+
+    - name: "Assert config directory exists."
+      ansible.builtin.assert:
+        that:
+          - config_dir.stat.exists
+          - config_dir.stat.isdir
+        fail_msg: "certbot config directory does not exist."
+
+    - name: "Verify certbot virtualenv exists."
+      ansible.builtin.stat:
+        path: "{{ calopsys_certbot_venv_dir }}"
+      register: venv_dir
+
+    - name: "Assert virtualenv directory exists."
+      ansible.builtin.assert:
+        that:
+          - venv_dir.stat.exists
+          - venv_dir.stat.isdir
+        fail_msg: "certbot virtualenv directory does not exist."
+
+    - name: "Verify certbot binary is in virtualenv."
+      ansible.builtin.stat:
+        path: "{{ calopsys_certbot_venv_dir }}/bin/certbot"
+      register: certbot_bin
+
+    - name: "Assert certbot binary exists."
+      ansible.builtin.assert:
+        that:
+          - certbot_bin.stat.exists
+          - certbot_bin.stat.executable
+        fail_msg: "certbot binary does not exist or is not executable."
+
+    - name: "Verify certbot version."
+      ansible.builtin.command: "{{ calopsys_certbot_venv_dir }}/bin/certbot --version"
+      register: certbot_version
+      changed_when: false
+
+    - name: "Assert certbot version output."
+      ansible.builtin.assert:
+        that:
+          - certbot_version.rc == 0
+          - "'certbot' in certbot_version.stdout"
+        fail_msg: "certbot version check failed."
+
+    - name: "Verify test_molecule certificate directory exists."
+      ansible.builtin.stat:
+        path: "{{ calopsys_certbot_config_dir }}/test_molecule"
+      register: cert_dir
+
+    - name: "Assert certificate directory exists."
+      ansible.builtin.assert:
+        that:
+          - cert_dir.stat.exists
+          - cert_dir.stat.isdir
+          - cert_dir.stat.mode == "0750"
+          - cert_dir.stat.pw_name == "root"
+        fail_msg: "Certificate directory does not exist or has wrong permissions/ownership."
+
+    - name: "Verify cli.ini exists."
+      ansible.builtin.stat:
+        path: "{{ calopsys_certbot_config_dir }}/test_molecule/cli.ini"
+      register: cli_ini
+
+    - name: "Assert cli.ini exists."
+      ansible.builtin.assert:
+        that:
+          - cli_ini.stat.exists
+          - cli_ini.stat.mode == "0600"
+          - cli_ini.stat.pw_name == "root"
+        fail_msg: "cli.ini does not exist or has wrong permissions/ownership."
+
+    - name: "Verify dns.ini exists."
+      ansible.builtin.stat:
+        path: "{{ calopsys_certbot_config_dir }}/test_molecule/dns.ini"
+      register: dns_ini
+
+    - name: "Assert dns.ini exists."
+      ansible.builtin.assert:
+        that:
+          - dns_ini.stat.exists
+          - dns_ini.stat.mode == "0600"
+          - dns_ini.stat.pw_name == "root"
+        fail_msg: "dns.ini does not exist or has wrong permissions/ownership."
+
+    - name: "Verify deploy-hook exists."
+      ansible.builtin.stat:
+        path: "{{ calopsys_certbot_config_dir }}/test_molecule/deploy-hook"
+      register: deploy_hook
+
+    - name: "Assert deploy-hook exists."
+      ansible.builtin.assert:
+        that:
+          - deploy_hook.stat.exists
+          - deploy_hook.stat.executable
+          - deploy_hook.stat.pw_name == "root"
+        fail_msg: "deploy-hook does not exist or is not executable."
+
+    - name: "Verify dns provider package is installed."
+      ansible.builtin.command: "{{ calopsys_certbot_venv_dir }}/bin/pip show certbot-dns-cloudflare"
+      register: dns_pip
+      changed_when: false
+
+    - name: "Assert dns provider package is installed."
+      ansible.builtin.assert:
+        that:
+          - dns_pip.rc == 0
+          - "'certbot-dns-cloudflare' in dns_pip.stdout"
+        fail_msg: "certbot-dns-cloudflare package is not installed in the virtualenv."
+
+    - name: "Verify certbot-renew.service exists."
+      ansible.builtin.stat:
+        path: /etc/systemd/system/certbot-renew.service
+      register: renew_service
+
+    - name: "Assert renew service unit exists."
+      ansible.builtin.assert:
+        that:
+          - renew_service.stat.exists
+        fail_msg: "certbot-renew.service unit file does not exist."
+
+    - name: "Verify certbot-renew.timer exists."
+      ansible.builtin.stat:
+        path: /etc/systemd/system/certbot-renew.timer
+      register: renew_timer
+
+    - name: "Assert renew timer unit exists."
+      ansible.builtin.assert:
+        that:
+          - renew_timer.stat.exists
+        fail_msg: "certbot-renew.timer unit file does not exist."
+
+    - name: "Get certbot-renew timer status."
+      ansible.builtin.systemd:
+        name: certbot-renew.timer
+      register: timer_status
+
+    - name: "Assert certbot-renew timer is active and enabled."
+      ansible.builtin.assert:
+        that:
+          - timer_status.status.ActiveState == "active"
+          - timer_status.status.UnitFileState == "enabled"
+        fail_msg: "certbot-renew.timer is not active or not enabled."

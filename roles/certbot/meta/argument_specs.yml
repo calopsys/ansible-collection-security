@@ -1,0 +1,52 @@
+---
+argument_specs:
+  main:
+    short_description: "Install and configure a certbot on Debian systems."
+    description:
+      - This role installs, manages and configures certbot on a Debian system.
+    author:
+      - Calopsys
+    options:
+      calopsys_certbot_renew_timer_interval:
+        description: >
+          Time for config time renew systemd. See https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html.
+          This role uses OnUnitActiveSec.
+        type: str
+        default: "1w"
+      calopsys_certbot_config_dir:
+        description: 'The certbot base directory.'
+        type: str
+        default: "/etc/certbot"
+      calopsys_certbot_venv_dir:
+        description: 'The directory containing the certbot virtualenv.'
+        type: str
+        default: "{{ calopsys_certbot_config_dir }}/venv"
+      calopsys_certbot_certificates:
+        description: "List of certificates to issue."
+        type: list
+        required: true
+        elements: dict
+        options:
+          name:
+            description: "Name of the certificate."
+            type: str
+            required: true
+          config_template:
+            description: "The ini configuration template file."
+            type: str
+            required: true
+          dns_pip_provider:
+            description: "Name of python plugin to download - required when using the DNS challenge."
+            type: str
+          dns_auth_template:
+            description: "Authentication configuration template file - required when using the DNS challenge."
+            type: str
+          hook_template:
+            description: "Deploy hook script template file for certificate renewal."
+            type: str
+          state:
+            description: >
+              Certificate state. 'present' deploys config only, 'issued' ensures the cert exists,
+              'absent' removes config files.
+            type: str
+            choices: ["present", "issued", "absent"]

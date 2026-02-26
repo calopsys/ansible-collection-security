@@ -1,0 +1,13 @@
+{{ ansible_managed | comment }}
+
+non-interactive = true
+agree-tos = true
+no-eff-email = true
+
+email = foo@bar.fr
+cert-name = {{ item.name }}
+domains = bar.fr,*.bar.fr
+preferred-challenges = dns
+authenticator = dns-scaleway
+dns-scaleway-credentials = "{{ calopsys_certbot_config_dir }}/{{ item.name }}/dns.ini"
+dns-scaleway-propagation-seconds = 300

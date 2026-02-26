@@ -1,0 +1,80 @@
+---
+- name: "Set {{ item.name }} certificate state."
+  ansible.builtin.set_fact:
+    _cert_state: "{{ item.state | default('issued') }}"
+
+- name: "Assert dns challenge parameters are both set for {{ item.name }} certificate."
+  when:
+    - _cert_state != 'absent'
+    - item.dns_pip_provider is defined or item.dns_auth_template is defined
+  ansible.builtin.assert:
+    that:
+      - item.dns_pip_provider is defined and item.dns_pip_provider | length > 0
+      - item.dns_auth_template is defined and item.dns_auth_template | length > 0
+    fail_msg: "dns_pip_provider and dns_auth_template are both required when using DNS challenge for {{ item.name }}."
+
+- name: "Delete {{ item.name }} certificate and configuration."
+  when: _cert_state == 'absent'
+  block:
+    - name: "Delete {{ item.name }} certificate."
+      ansible.builtin.command:
+        cmd: "{{ calopsys_certbot_venv_dir }}/bin/certbot delete --non-interactive --cert-name {{ item.name }}"
+      register: _certbot_delete
+      changed_when: _certbot_delete.rc == 0
+      failed_when: _certbot_delete.rc != 0 and 'No certificate found' not in _certbot_delete.stderr
+
+    - name: "Remove {{ item.name }} certificate directory."
+      ansible.builtin.file:
+        path: "{{ calopsys_certbot_config_dir }}/{{ item.name }}"
+        state: absent
+
+- name: "Deploy {{ item.name }} certificate configuration."
+  when: _cert_state != 'absent'
+  block:
+    - name: "Create {{ item.name }} certificate directory."
+      ansible.builtin.file:
+        path: "{{ calopsys_certbot_config_dir }}/{{ item.name }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0750'
+
+    - name: "Install python dns provider for {{ item.name }} certificate."
+      when: item.dns_pip_provider is defined and item.dns_pip_provider | length > 0
+      ansible.builtin.pip:
+        name: "{{ item.dns_pip_provider }}"
+        state: present
+        virtualenv: "{{ calopsys_certbot_venv_dir }}"
+
+    - name: "Deploy {{ item.name }} certificate dns auth configuration."
+      when: item.dns_auth_template is defined and item.dns_auth_template | length > 0
+      ansible.builtin.template:
+        src: "{{ item.dns_auth_template }}"
+        dest: "{{ calopsys_certbot_config_dir }}/{{ item.name }}/dns.ini"
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: "Deploy {{ item.name }} certificate configuration file."
+      ansible.builtin.template:
+        src: "{{ item.config_template }}"
+        dest: "{{ calopsys_certbot_config_dir }}/{{ item.name }}/cli.ini"
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: "Deploy {{ item.name }} certificate renew deploy-hook script."
+      when: item.hook_template is defined and item.hook_template | length > 0
+      ansible.builtin.template:
+        src: "{{ item.hook_template }}"
+        dest: "{{ calopsys_certbot_config_dir }}/{{ item.name }}/deploy-hook"
+        owner: root
+        group: root
+        mode: '0750'
+
+- name: "Issue {{ item.name }} certificate."
+  when: _cert_state == 'issued'
+  ansible.builtin.command:
+    cmd: "{{ calopsys_certbot_venv_dir }}/bin/certbot certonly -c {{ calopsys_certbot_config_dir }}/{{ item.name }}/cli.ini"
+  args:
+    creates: "/etc/letsencrypt/live/{{ item.name }}"

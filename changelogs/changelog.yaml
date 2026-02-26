@@ -1,0 +1,11 @@
+---
+ancestor: null
+releases:
+  1.0.0:
+    changes:
+      release_summary: 'First release
+
+        '
+    fragments:
+      - 1.0.0.yml
+    release_date: '2026-04-13'
